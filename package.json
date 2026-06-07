@@ -1,6 +1,6 @@
 {
   "name": "catmandu-fix-js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A JavaScript implementation of the Catmandu Fix language — a small declarative DSL for transforming JSON-like records (with MARC support).",
   "keywords": [
     "catmandu",
