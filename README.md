@@ -1,5 +1,8 @@
 # catmandu-fix-js
 
+> ⚠️ **Research software — not intended for production use.** 
+> APIs, CLI flags, and behavior may change without notice.
+
 A JavaScript / TypeScript implementation of the **[Catmandu Fix language](https://github.com/LibreCat/Catmandu/wiki/Fix-language)** — a small declarative DSL for transforming JSON-like records. Fix is to JSON what XSLT is to XML.
 
 The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://github.com/LibreCat/Catmandu) toolkit. This package is a faithful, dependency-free port of a useful subset of that language, compiled to plain JavaScript functions so it can be embedded in any Node.js project. Semantics follow `Catmandu::Fix::*` exactly — the test suite is ported from Catmandu's own `t/`.
