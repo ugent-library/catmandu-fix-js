@@ -6,9 +6,33 @@ The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://gith
 
 It also ships the MARC fixes (`Catmandu::MARC`-style `marc_map`, `marc_each`, …), operating on the standard MARC-in-JSON record representation.
 
+## Installation
+
+This package is not published to npm. Install it directly from the
+[Codeberg repository](https://codeberg.org/phochste/catmandu-fix-js):
+
 ```
-npm install catmandu-fix-js
+npm install git+https://codeberg.org/phochste/catmandu-fix-js.git
 ```
+
+To pin a specific version, append a tag, branch, or commit:
+
+```
+npm install git+https://codeberg.org/phochste/catmandu-fix-js.git#v0.1.0
+```
+
+Or add it to your `package.json` directly:
+
+```json
+{
+  "dependencies": {
+    "catmandu-fix-js": "git+https://codeberg.org/phochste/catmandu-fix-js.git"
+  }
+}
+```
+
+The package's `prepare` script builds the TypeScript sources to `dist/` on
+install, so no separate build step is required.
 
 ## Quick start
 
