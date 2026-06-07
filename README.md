@@ -82,7 +82,7 @@ function fixStream(src) {
     },
   });
 }
-```;
+```
 
 ## Thread safe
 
