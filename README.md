@@ -9,6 +9,8 @@ The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://gith
 
 It also ships the MARC fixes (`Catmandu::MARC`-style `marc_map`, `marc_each`, …), operating on the standard MARC-in-JSON record representation.
 
+> **Looking for something more general-purpose?** Fix is a focused, record-oriented DSL aimed at metadata/MARC pipelines and Catmandu compatibility. If you want a richer, general-purpose JSON query and transformation language — with path expressions, aggregation, joins, and a large built-in function library — consider [JSONata](https://jsonata.org) ([`npm install jsonata`](https://www.npmjs.com/package/jsonata)).
+
 ## Installation
 
 This package is not published to npm. Install it directly from the
