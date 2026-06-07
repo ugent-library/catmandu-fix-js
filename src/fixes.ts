@@ -16,8 +16,17 @@ type Data = any;
 type Fixer = (data: Data) => Data;
 type FixBuilder = (args: string[]) => Fixer;
 
+// Structural deep clone of JSON-like data. Unlike structuredClone() this reads
+// values through property access, so it also detaches a value read out of an
+// immer copy-on-write draft (a Proxy, which structuredClone refuses to clone).
+// Fix records are JSON-like (objects, arrays, primitives), which is exactly
+// what this covers.
 function clone<T>(v: T): T {
-    return v === undefined ? v : structuredClone(v);
+    if (v === null || typeof v !== 'object') return v;
+    if (Array.isArray(v)) return v.map(clone) as unknown as T;
+    const out: Record<string, any> = {};
+    for (const k of Object.keys(v as object)) out[k] = clone((v as any)[k]);
+    return out as T;
 }
 
 // Catmandu is_value: a defined scalar (string or number), not a ref.

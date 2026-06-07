@@ -5,9 +5,11 @@
 
 A JavaScript / TypeScript implementation of the **[Catmandu Fix language](https://github.com/LibreCat/Catmandu/wiki/Fix-language)** — a small declarative DSL for transforming JSON-like records. Fix is to JSON what XSLT is to XML.
 
-The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://github.com/LibreCat/Catmandu) toolkit. This package is a faithful, dependency-free port of a useful subset of that language, compiled to plain JavaScript functions so it can be embedded in any Node.js project. Semantics follow `Catmandu::Fix::*` exactly — the test suite is ported from Catmandu's own `t/`.
+The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://github.com/LibreCat/Catmandu) toolkit. This package is a faithful port of a useful subset of that language, compiled to plain JavaScript functions so it can be embedded in any Node.js project. Its only runtime dependency is [immer](https://immerjs.github.io/immer/), which makes the compiled fixes **pure** (see [Pure & immutable](#pure--immutable)). Semantics follow `Catmandu::Fix::*` exactly — the test suite is ported from Catmandu's own `t/`.
 
 It also ships the MARC fixes (`Catmandu::MARC`-style `marc_map`, `marc_each`, …), operating on the standard MARC-in-JSON record representation.
+
+> **Looking for something more general-purpose?** Fix is a focused, record-oriented DSL aimed at metadata/MARC pipelines and Catmandu compatibility. If you want a richer, general-purpose JSON query and transformation language — with path expressions, aggregation, joins, and a large built-in function library — consider [JSONata](https://jsonata.org) ([`npm install jsonata`](https://www.npmjs.com/package/jsonata)).
 
 ## Installation
 
@@ -87,9 +89,51 @@ function fixStream(src) {
 }
 ```
 
+## Pure & immutable
+
+Unlike the Perl reference implementation — which mutates the record hashref in
+place (`Catmandu::Path::simple` semantics) — `compileFix(src)` returns a **pure**
+function by default. It does **not** touch the record you pass in:
+
+```js
+const run = compileFix('upcase(title)');
+const input  = { id: 1, title: 'hi', meta: { y: 2024 } };
+const output = run(input);
+
+output;            // => { id: 1, title: 'HI', meta: { y: 2024 } }  (frozen)
+input;             // => { id: 1, title: 'hi', meta: { y: 2024 } }  (untouched)
+output === input;  // => false
+output.meta === input.meta; // => true — untouched subtrees are SHARED, not deep-copied
+```
+
+This is built on [immer](https://immerjs.github.io/immer/): the chain runs
+against a copy-on-write draft, so only the fields a fix actually changes are
+copied (**structural sharing**) and the input is guaranteed pristine. The result
+is deep-frozen, so neither the input nor the output can be mutated afterwards.
+You can safely keep the original alongside the transformed record, apply a fix to
+a shared/reused object, and reason about a fix as a value-to-value function.
+
+**Tuning.** Purity has a cost (a copy-on-write proxy per record, plus the freeze
+walk). Two escape hatches:
+
+- `compileFix(src, { inPlace: true })` — opt back into the legacy mutating
+  behaviour for maximum throughput when you own the record and don't need the
+  original. The fastest path; the input **is** modified.
+- `import { setAutoFreeze } from 'catmandu-fix-js'; setAutoFreeze(false)` —
+  keep the input pristine but skip freezing the result. This is where structural
+  sharing pays off (≈4× faster than a deep copy on large, sparsely-edited
+  records), **but** the untouched subtrees the result shares with the input are
+  then mutable — only safe if you treat results as read-only.
+
 ## Thread safe
 
-The Javascript library is thread safe and can be run with many parallel workers. See the examples folder for demonstrations how to parse JSON and MARC data using multiple workers. On an off the shelf laptop (8 x AMD Ryzen 3 ; 16 RAM ; Ubuntu 24.04) speeds up to a few O(100.000) records per second where measured using a sample of small synthetic MARC records.
+A compiled fix can be run across a pool of `worker_threads` — see
+[`examples/multithreaded.mjs`](./examples/multithreaded.mjs). Records are never
+shared across threads: Node workers communicate by message passing
+(`postMessage` deep-copies via structured clone), so each worker only touches its
+own copy. Combined with the purity above — each worker compiles its own runner
+from the Fix **source string** (functions aren't cloneable) and no record object
+is shared — there is no cross-thread shared state to race on.
 
 ## Custom fixes
 
