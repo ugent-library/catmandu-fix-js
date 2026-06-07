@@ -1,5 +1,14 @@
 # Examples
 
+## Mem10 - a real world example
+
+```
+node examples/mem10.mjs
+```
+
+The mem10 examples parsed MARC data from an authority record into a format that can be used by Solr indexes.
+This demonstrates a typical data processing pipeline using fixes.
+
 ## Purity — fixes don't mutate your records
 
 ```
