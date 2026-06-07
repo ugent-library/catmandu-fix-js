@@ -55,6 +55,16 @@ export async function runDemo({ title, src, total, workers, chunkSize = 5000, ma
   console.log(`  workers : ${workers}`);
   console.log(`  chunk   : ${chunkSize.toLocaleString()} records  (memory stays bounded)\n`);
 
+  // Sample peak resident set size across the whole run. worker_threads live in
+  // this process, so process RSS covers the workers too.
+  let peakRss = process.memoryUsage().rss;
+  const sampler = setInterval(() => {
+    const rss = process.memoryUsage().rss;
+    if (rss > peakRss) peakRss = rss;
+  }, 50);
+  sampler.unref();
+  const wallStart = performance.now();
+
   const run = compileFix(src);
 
   // Show one transformed record so it's clear what the script does.
@@ -145,4 +155,14 @@ export async function runDemo({ title, src, total, workers, chunkSize = 5000, ma
   console.log('✔ parallel result is identical to the single-threaded reference');
   console.log('  (same kept-count, same SHA-1 over all output records, in order).');
   console.log('  Memory stayed bounded — only a handful of chunks are ever in flight.');
+
+  // ---- statistics ---------------------------------------------------------
+  clearInterval(sampler);
+  const wallMs = performance.now() - wallStart;
+  const fmtRate = (ms) => Math.round(total / (ms / 1000)).toLocaleString();
+  console.log('\nstatistics');
+  console.log(`  wall clock      : ${(wallMs / 1000).toFixed(1)}s`);
+  console.log(`  single-threaded : ${(singleMs / 1000).toFixed(1)}s  (${fmtRate(singleMs)} recs/sec)`);
+  console.log(`  multi-threaded  : ${(parallelMs / 1000).toFixed(1)}s  (${fmtRate(parallelMs)} recs/sec, ${workers} workers)`);
+  console.log(`  max memory (RSS): ${(peakRss / 1024 / 1024).toFixed(0)} MB`);
 }
