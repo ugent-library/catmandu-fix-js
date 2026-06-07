@@ -125,16 +125,13 @@ walk). Two escape hatches:
 
 ## Thread safe
 
-The library can be run with many parallel workers. See the examples folder for
-demonstrations of parsing JSON and MARC data using multiple workers. On an
-off-the-shelf laptop (8 × AMD Ryzen 3; 16 GB RAM; Ubuntu 24.04), throughput of a
-few × O(100,000) records per second was measured on small synthetic MARC records.
-
-Records are never shared across threads: Node `worker_threads` communicate by
-message passing (`postMessage` deep-copies via structured clone), so each worker
-mutates only its own copy. Combined with the purity above — each worker compiles
-its own runner from the Fix **source string** (functions aren't cloneable) and no
-record object is shared — there is no cross-thread shared state to race on.
+A compiled fix can be run across a pool of `worker_threads` — see
+[`examples/multithreaded.mjs`](./examples/multithreaded.mjs). Records are never
+shared across threads: Node workers communicate by message passing
+(`postMessage` deep-copies via structured clone), so each worker only touches its
+own copy. Combined with the purity above — each worker compiles its own runner
+from the Fix **source string** (functions aren't cloneable) and no record object
+is shared — there is no cross-thread shared state to race on.
 
 ## Custom fixes
 
