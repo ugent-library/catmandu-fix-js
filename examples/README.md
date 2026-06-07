@@ -73,9 +73,13 @@ has nothing to do with thread-safety. These demos avoid that:
 properties of that function:
 
 - **No cross-record shared state.** The compiled chain holds only its own
-  immutable configuration (paths, literals, sub-runners). It reads and writes
-  *the record it was handed* and nothing else. Two records can be processed in
+  immutable configuration (paths, literals, sub-runners). By default it does
+  not even mutate its argument: it runs against a copy-on-write [immer](https://immerjs.github.io/immer/)
+  draft and returns a new, frozen record, leaving the input untouched (see
+  "Pure & immutable" in the top-level README). Two records can be processed in
   any order, or simultaneously on different threads, without interfering.
+  (`compileFix(src, { inPlace: true })` opts back into mutating the input for
+  throughput.)
 
 - **Records are not shared between threads.** In Node, `worker_threads`
   communicate by message passing; `postMessage` deep-copies via the structured
