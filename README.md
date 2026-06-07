@@ -82,7 +82,11 @@ function fixStream(src) {
     },
   });
 }
-```
+```;
+
+## Thread safe
+
+The Javascript library is thread safe and can be run with many parallel workers. See the examples folder for demonstrations how to parse JSON and MARC data using multiple workers. On an off the shelf laptop (8 x AMD Ryzen 3 ; 16 RAM ; Ubuntu 24.04) speeds up to a few O(100.000) records per second where measured using a sample of small synthentic MARC records.
 
 ## Custom fixes
 
