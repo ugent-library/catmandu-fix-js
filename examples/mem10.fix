@@ -1,0 +1,334 @@
+# id
+marc_map(001, id)
+copy_field(id,_id)
+
+# format
+marc_map(920a, format)
+
+# title (name)
+if any_equal(format, 'persoon')
+  marc_map(100, title_display, join: " ") # with birth/death year
+  marc_map(100a, title_t.$append)
+  marc_map(400a, title_t.$append)
+else
+  marc_map(110a, title_display)
+  marc_map(110a, title_t.$append)
+  marc_map(110g, title_t.$append)
+  marc_map(110a, organization_facet.$append)
+  marc_map(110g, organization_code_facet.$append)
+  if any_equal(format, 'faculteit')
+    if marc_match(110g, '^[A-Z]{2}$')
+      marc_map(110a, faculty_facet.$append)
+      marc_map(110g, faculty_code_facet.$append)
+    end
+  end
+end
+copy_field(title_t.$first, title_sort)
+replace_all(title_sort, '\W+', "")
+substring(title_sort, 0, 50)
+downcase(title_sort)
+if all_match(title_sort, '^\s*$')
+  remove_field(title_sort)
+end
+
+# birth, death dates and places display
+marc_map(900a, birth_place_facet)
+marc_map(900c, birth_country_facet)
+unless marc_match(046f, unknown)
+  marc_map(046f, birth_date_sort)
+  marc_map(046f, birth_date_display.$append)
+  datetime_format(birth_date_display.$first, source_pattern: "%Y%m%d", destination_pattern: "%Y")
+end
+unless marc_match(046g, unknown)
+  marc_map(046g, death_date_display.$append)
+  datetime_format(death_date_display.$first, source_pattern: "%Y%m%d", destination_pattern: "%Y")
+end
+marc_map(900abc, birth_date_display.$prepend, join: ", ")
+marc_map(901abc, death_date_display.$prepend, join: ", ")
+join_field(birth_date_display, ", ")
+join_field(death_date_display, ", ")
+
+# organisation start, end date
+marc_map(046qr, tmp.0, join: '-')
+if exists(tmp.$first)
+  replace_all(tmp.0, '-unknown', '-')
+  replace_all(tmp.0, 'unknown-', '-')
+  if any_match(tmp.0, '^-+$')
+    remove_field(tmp.0)
+  end
+  copy_field(title_display, tmp.$prepend)
+  join_field(tmp, " ")
+  copy_field(tmp, title_display)
+end
+remove_field(tmp)
+
+# appointment dates
+do marc_each()
+  unless marc_match(046s, unknown)
+    marc_map(046s, appointment_start_date_display.$append)
+  end
+  unless marc_match(046t, unknown)
+    marc_map(046t, appointment_end_date_display.$append)
+  end
+end
+copy_field(appointment_start_date_display, appointment_start_date_facet)
+copy_field(appointment_start_date_display.$first, appointment_start_date_sort)
+substring(appointment_start_date_sort, 0, 4)
+replace_all(appointment_start_date_display.*, '(\d{4})(\d{2})(\d{2})', '$3/$2/$1')
+replace_all(appointment_end_date_display.*, '(\d{4})(\d{2})(\d{2})', '$3/$2/$1')
+
+# honorific
+marc_map(908a, honorific_display)
+
+# gender
+do marc_each()
+  marc_map(375a, gender_facet)
+end
+
+# history
+marc_map(410, history_display.$append, join: " ")
+
+# related people
+do marc_each()
+  marc_map(500a, tmp.$append)
+  if marc_match(5000, '.')
+    marc_map(5000, tmp.$prepend)
+    replace_all(tmp.$first, '^[^:]+:', "")
+    format(tmp.$first, '<a href="/catalog/%s">')
+    append(tmp.$last, '</a>')
+  end
+  if marc_match(500i, '.')
+    marc_map(500i, tmp.$prepend)
+    append(tmp.$first, ' ')
+  end
+  if marc_match(500c, '.')
+    marc_map(500c, tmp.$prepend)
+    append(tmp.$first, ' ')
+  end
+  if marc_match(500d, '.')
+    marc_map(500d, tmp.$append)
+    prepend(tmp.$last, ' ')
+  end
+  join_field(tmp, '')
+  copy_field(tmp, people_display.$append)
+  remove_field(tmp)
+end
+
+# mandate or related organization
+do marc_each()
+  marc_map(910a, tmp.$append)
+  if marc_match(9100, '.')
+    marc_map(9100, tmp.$prepend)
+    replace_all(tmp.$first, '^[^:]+:', "")
+    format(tmp.$first, '<a href="/catalog/%s">')
+    append(tmp.$last, '</a>')
+  end
+  if marc_match(910i, '.')
+    marc_map(910i, tmp.$prepend)
+    append(tmp.$first, ' ')
+  end
+  marc_map(910st, tmp.$append, join: '-')
+  replace_all(tmp.$last, '-unknown', '-')
+  replace_all(tmp.$last, 'unknown-', '-')
+  if any_match(tmp.$last, '^-+$')
+    remove_field(tmp.$last)
+  else
+    replace_all(tmp.$last, '(\d{4})(\d{2})(\d{2})', '$3/$2/$1')
+    replace_all(tmp.$last, '(\d{4})(\d{2})', '$2/$1')
+    prepend(tmp.$last, " ")
+  end
+  join_field(tmp, "")
+  copy_field(tmp, affiliation_display.$append)
+  remove_field(tmp)
+
+  marc_map(911a, tmp.$append)
+  if marc_match(9110, '.')
+    marc_map(9110, tmp.$prepend)
+    replace_all(tmp.$first, '^[^:]+:', "")
+    format(tmp.$first, '<a href="/catalog/%s">')
+    append(tmp.$last, '</a>')
+  end
+  if marc_match(911i, '.')
+    marc_map(911i, tmp.$prepend)
+    append(tmp.$first, ' ')
+  end
+  marc_map(911st, tmp.$append, join: '-')
+  replace_all(tmp.$last, '-unknown', '-')
+  replace_all(tmp.$last, 'unknown-', '-')
+  if any_match(tmp.$last, '^-+$')
+    remove_field(tmp.$last)
+  else
+    replace_all(tmp.$last, '(\d{4})(\d{2})(\d{2})', '$3/$2/$1')
+    replace_all(tmp.$last, '(\d{4})(\d{2})', '$2/$1')
+    prepend(tmp.$last, " ")
+  end
+  join_field(tmp, "")
+  copy_field(tmp, mandate_display.$append)
+  marc_map(911i, mandate_facet.$append)
+  lookup(mandate_facet.*, ./examples/lookup.csv, sep_char: ';', delete: 1)
+  remove_field(tmp)
+
+  marc_map(912a, tmp.$append)
+  if marc_match(9120, '.')
+    marc_map(9120, tmp.$prepend)
+    replace_all(tmp.$first, '^[^:]+:', "")
+    format(tmp.$first, '<a href="/catalog/%s">')
+    append(tmp.$last, '</a>')
+  end
+  if marc_match(912i, '.')
+    marc_map(912i, tmp.$prepend)
+    append(tmp.$first, ' ')
+  end
+  marc_map(912st, tmp.$append, join: '-')
+  replace_all(tmp.$last, '-unknown', '-')
+  replace_all(tmp.$last, 'unknown-', '-')
+  if any_match(tmp.$last, '^-+$')
+    remove_field(tmp.$last)
+  else
+    replace_all(tmp.$last, '(\d{4})(\d{2})(\d{2})', '$3/$2/$1')
+    replace_all(tmp.$last, '(\d{4})(\d{2})', '$2/$1')
+    prepend(tmp.$last, " ")
+  end
+  join_field(tmp, "")
+  copy_field(tmp, function_display.$append)
+  remove_field(tmp)
+end
+
+unless any_equal(format, 'persoon')
+do marc_each()
+    marc_map(510a, tmp.$append)
+    if marc_match(5100, '.')
+      marc_map(5100, tmp.$prepend)
+      replace_all(tmp.$first, '^[^:]+:', "")
+      format(tmp.$first, '<a href="/catalog/%s">')
+      append(tmp.$last, '</a>')
+    end
+    if marc_match(510i, '.')
+      marc_map(510i, tmp.$prepend)
+      append(tmp.$first, ' ')
+    end
+    marc_map(510st, tmp.$append, join: '-')
+    replace_all(tmp.$last, '-unknown', '-')
+    replace_all(tmp.$last, 'unknown-', '-')
+    if any_match(tmp.$last, '^-+$')
+      remove_field(tmp.$last)
+    else
+      replace_all(tmp.$last, '(\d{4})(\d{2})(\d{2})', '$3/$2/$1')
+      replace_all(tmp.$last, '(\d{4})(\d{2})', '$2/$1')
+      prepend(tmp.$last, " ")
+    end
+    join_field(tmp, "")
+    copy_field(tmp, relations_display.$append)
+    remove_field(tmp)
+end
+end
+
+do marc_each()
+  if marc_match(910g, '^[A-Z]{2}$')
+    marc_map(910a, faculty_facet.$append)
+    marc_map(910g, faculty_code_facet.$append)
+  end
+  if marc_match(910g, '^[A-Z]{2}\d{2}$')
+    marc_map(910a, department_facet.$append)
+    marc_map(910g, department_code_facet.$append)
+  end
+end
+
+marc_map(910a, organization_facet.$append)
+marc_map(910g, organization_code_facet.$append)
+
+# source
+marc_map(670a, source_display.$append)
+
+# discipline
+marc_map(681a, discipline_facet.$append)
+
+# link
+
+do marc_each()
+  marc_map(856u, tmp.$append)
+  if marc_match(856z, '.')
+    marc_map(856z, tmp.$prepend)
+    prepend(tmp.$first, '[')
+    append(tmp.$first, ']')
+  end
+  join_field(tmp, '')
+
+  if marc_match(856u, '^.*\.jpg$')
+      marc_map(856u, thumbnail_display.$append)
+      copy_field(thumbnail_display.$last, thumbnail_url_display.$append)
+      copy_field(thumbnail_display.$last, thumbnail_link_url_display.$append)
+      remove_field(tmp)
+  else
+      move_field(tmp, link_display.$append)
+
+      if marc_match(856u, '.*MEM10.*') # pdf thumbnails
+        marc_map(856u, thumbnail_display.$append)
+        copy_field(thumbnail_display.$last, thumbnail_url_display.$append)
+        append(thumbnail_url_display.$last, '.jpg')
+        copy_field(thumbnail_display.$last, thumbnail_link_url_display.$append)
+      end
+      if marc_match(035a, '^\(biblio\).+')
+        marc_map(035a, link_display.$append)
+        replace_all(link_display.$last, '^\(biblio\)(.+)', '[Ghent University Academic Bibliography]http://biblio.ugent.be/person/$1')
+      end
+      if marc_match(035a, '^\(viaf\).+')
+        marc_map(035a, link_display.$append)
+        replace_all(link_display.$last, '^\(viaf\)(.+)', '[Virtual International Authority File]http://viaf.org/viaf/$1')
+      end
+  end
+end
+
+# name father
+marc_map(902a, name_father_display)
+
+# occupation father
+marc_map(903a, occupation_father_display)
+
+# primary education
+marc_map(904ad, primary_education_display, split: 1)
+join_field(primary_education_display.*, ", ")
+# secondary education
+marc_map(905ad, secondary_education_display, split: 1)
+join_field(secondary_education_display.*, ", ")
+# higher education
+marc_map(906abd, higher_education_display, split: 1)
+join_field(higher_education_display.*, ", ")
+
+# activities
+marc_map(907, activities_display.$append, join: " ")
+
+# cleanup
+replace_all(faculty_facet.*, ',[^,]+', '')
+replace_all(faculty_facet.*, '^\[', '')
+replace_all(faculty_facet.*, '\]$', '')
+replace_all(faculty_facet.*, 'faculteit\s+', '')
+uniq(faculty_facet)
+uniq(faculty_code_facet)
+replace_all(department_facet.*, 'vakgroep\s+', '')
+uniq(department_facet)
+uniq(department_code_facet)
+uniq(mandate_facet)
+
+# text
+copy_field(id, text.$append)
+copy_field(format, text.$append)
+copy_field(title_t.*, text.$append)
+copy_field(mandate_display.*, text.$append)
+copy_field(history_display.*, text.$append)
+copy_field(people_display.*, text.$append)
+copy_field(relations_display.*, text.$append)
+copy_field(discipline_facet.*, text.$append)
+copy_field(birth_place_display, text.$append)
+copy_field(death_place_display, text.$append)
+copy_field(name_father_display, text.$append)
+copy_field(occupation_father_display, text.$append)
+copy_field(primary_education_display.*, text.$append)
+copy_field(secondary_education_display.*, text.$append)
+copy_field(higher_education_display.*, text.$append)
+copy_field(activities_display.*, text.$append)
+copy_field(honorific_display, text.$append)
+
+# marc xml
+marc_xml(record)
+move_field(record, marc_display)
