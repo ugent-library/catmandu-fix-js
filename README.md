@@ -5,41 +5,20 @@
 
 A JavaScript / TypeScript implementation of the **[Catmandu Fix language](https://github.com/LibreCat/Catmandu/wiki/Fix-language)** — a small declarative DSL for transforming JSON-like records. Fix is to JSON what XSLT is to XML.
 
-The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://github.com/LibreCat/Catmandu) toolkit. This package is a faithful port of a useful subset of that language, compiled to plain JavaScript functions so it can be embedded in any Node.js project. Its only runtime dependency is [immer](https://immerjs.github.io/immer/), which makes the compiled fixes **pure** (see [Pure & immutable](#pure--immutable)). Semantics follow `Catmandu::Fix::*` exactly — the test suite is ported from Catmandu's own `t/`.
-
-It also ships the MARC fixes (`Catmandu::MARC`-style `marc_map`, `marc_each`, …), operating on the standard MARC-in-JSON record representation.
+The reference implementation of Fix is the Perl [LibreCat/Catmandu](https://metacpan.org/pod/Catmandu) data toolkit. This package is a faithful port of a useful subset of that language, compiled to plain JavaScript functions so it can be embedded in any Node.js project. 
 
 > **Looking for something more general-purpose?** Fix is a focused, record-oriented DSL aimed at metadata/MARC pipelines and Catmandu compatibility. If you want a richer, general-purpose JSON query and transformation language — with path expressions, aggregation, joins, and a large built-in function library — consider [JSONata](https://jsonata.org) ([`npm install jsonata`](https://www.npmjs.com/package/jsonata)).
 
 ## Installation
 
-This package is not published to npm. Install it directly from the
+This package is not yet published to npm. Install it directly from the
 [Codeberg repository](https://codeberg.org/phochste/catmandu-fix-js):
 
 ```
 npm install git+https://codeberg.org/phochste/catmandu-fix-js.git
 ```
 
-To pin a specific version, append a tag, branch, or commit:
-
-```
-npm install git+https://codeberg.org/phochste/catmandu-fix-js.git#v0.1.0
-```
-
-Or add it to your `package.json` directly:
-
-```json
-{
-  "dependencies": {
-    "catmandu-fix-js": "git+https://codeberg.org/phochste/catmandu-fix-js.git"
-  }
-}
-```
-
-The package's `prepare` script builds the TypeScript sources to `dist/` on
-install, so no separate build step is required.
-
-## Quick start
+## Synposis
 
 ```js
 import { compileFix, REJECT } from 'catmandu-fix-js';
@@ -91,9 +70,7 @@ function fixStream(src) {
 
 ## Pure & immutable
 
-Unlike the Perl reference implementation — which mutates the record hashref in
-place (`Catmandu::Path::simple` semantics) — `compileFix(src)` returns a **pure**
-function by default. It does **not** touch the record you pass in:
+The `compileFix(src)` returns a **pure** function by default and does **not** touch the record you pass in:
 
 ```js
 const run = compileFix('upcase(title)');
@@ -131,9 +108,9 @@ A compiled fix can be run across a pool of `worker_threads` — see
 [`examples/multithreaded.mjs`](./examples/multithreaded.mjs). Records are never
 shared across threads: Node workers communicate by message passing
 (`postMessage` deep-copies via structured clone), so each worker only touches its
-own copy. Combined with the purity above — each worker compiles its own runner
+own copy. Combined with the purity above, each worker compiles its own runner
 from the Fix **source string** (functions aren't cloneable) and no record object
-is shared — there is no cross-thread shared state to race on.
+is shared, there is no cross-thread shared state to race on.
 
 ## Custom fixes
 
